@@ -19,6 +19,21 @@ namespace CraftOpt {
         return result;
     }
 
+    template<int SelectCount>
+    void iteratePosMod(int elements) {
+        std::array<int, SelectCount> index{};
+        while (true) {
+            if (index[SelectCount - 1] == elements) {
+                for (int i = SelectCount - 2; i >= 0; --i) {
+                    index[i + 1] = 0;
+                    ++index[i];
+                    if (index[i] < elements) break;
+                }
+                if (index[0] == elements) break;
+            }
+            ++index[SelectCount - 1];
+        }
+    }
 
     size_t countC(const std::vector<Ingredient>& ingredients, int start, int depth) {
         if (depth == 5) return ingredients.size() - start;
@@ -41,22 +56,6 @@ namespace CraftOpt {
         }
         std::cout << "PosMod: " << posMod.size() << " Rem: " << remaining.size() << std::endl;
         std::cout << "Combinations: " << countC(remaining, 0, 0) << std::endl;
-        /*std::for_each(std::execution::par_unseq, remaining.begin(), remaining.end(), [&remaining](auto && i1){
-            std::for_each(std::execution::par_unseq, remaining.begin(), remaining.end(), [&remaining, &i1](auto && i2){
-                std::for_each(std::execution::par_unseq, remaining.begin(), remaining.end(), [&remaining, &i1, &i2](auto && i3){
-                    std::for_each(std::execution::par_unseq, remaining.begin(), remaining.end(), [&remaining, &i1, &i2, &i3](auto && i4){
-                        std::for_each(std::execution::par_unseq, remaining.begin(), remaining.end(), [&remaining, &i1, &i2, &i3, &i4](auto && i5){
-                            std::for_each(std::execution::par_unseq, remaining.begin(), remaining.end(), [&i1, &i2, &i3, &i4, &i5](auto && i6){
-                                CraftStats stats;
-                                stats.durability = i1.durability + i2.durability + i3.durability + i4.durability + i5.durability + i6.durability;
-                                placeHolder(stats);
-                            });
-                        });
-                    });
-                });
-                std::cerr << "inner" << std::endl;
-            });
-            std::cerr << "outher" << std::endl;
-        });*/
+
     }
 }

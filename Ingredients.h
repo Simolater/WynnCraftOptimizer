@@ -9,7 +9,9 @@
 using json = nlohmann::json;
 
 namespace CraftOpt {
-    using value_t = int16_t;
+    using value_t = int32_t;
+
+    static constexpr auto s_Craft_Slot_Count = 6;
 
     enum ProfessionType {
         Scribing = 1,
@@ -23,11 +25,11 @@ namespace CraftOpt {
     };
 
     enum SkillType {
-        Strength, Dexterity, Intelligence, Defence, Agility
+        Strength, Dexterity, Intelligence, Defence, Agility, Skill_Type_Count = Agility + 1
     };
 
     enum EffectivenessType {
-        Left, Right, Above, Under, Touching, NotTouching
+        Left, Right, Above, Under, Touching, NotTouching, Pos_Type_Count = NotTouching + 1
     };
 
     enum IDType {
@@ -69,37 +71,40 @@ namespace CraftOpt {
         Loot_Quality,
         Soul_Point_Regen,
 
-        ID_Types_Count = Soul_Point_Regen
+        ID_Types_Count = Soul_Point_Regen + 1
     };
 
     struct Ingredient {
         std::string name;
+        value_t id;
         value_t tier;
         value_t skills;
         value_t level;
         // IDs value range [min, max]
         std::array<std::pair<value_t, value_t>, ID_Types_Count> ids;
         // ItemIDs
-        value_t durability;
-        std::array<value_t, 5> skill_requirements;
+        value_t durability = 0;
+        std::array<value_t, Skill_Type_Count> skill_requirements;
         // ConsumableIDs
-        value_t charges;
-        value_t length;
+        value_t charges = 0;
+        value_t length = 0;
         // PosMods
-        std::array<value_t, 6> position_modifiers;
+        std::array<value_t, Pos_Type_Count> position_modifiers;
     };
 
     struct CraftStats {
-        std::array<size_t, 6> ingredients;
+        std::array<size_t, s_Craft_Slot_Count> ingredients{};
         // IDs value range [min, max]
-        std::array<std::pair<value_t, value_t>, ID_Types_Count> ids;
+        std::array<std::pair<value_t, value_t>, ID_Types_Count> ids{};
         // ItemIDs
-        value_t durability;
-        std::array<value_t, 5> skill_requirements;
+        value_t durability = 0;
+        std::array<value_t, Skill_Type_Count> skill_requirements{};
         // ConsumableIDs
-        value_t charges;
-        value_t length;
+        value_t charges = 0;
+        value_t length = 0;
+
+        void add_ingredient(size_t slot, const Ingredient&, value_t effectiveness);
     };
 
-    std::vector<Ingredient> ingredients_from_json(const json&);
+    auto ingredients_from_json(const json&) -> std::vector<Ingredient>;
 }

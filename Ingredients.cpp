@@ -6,7 +6,7 @@
 #include <string_view>
 
 namespace CraftOpt {
-    static ProfessionType profession_from_string(const std::string& profession) {
+    static auto profession_from_string(const std::string& profession) {
         static std::unordered_map<std::string, ProfessionType> const profs = {
                 {"SCRIBING",Scribing}, {"JEWELING",Jeweling},
                 {"ALCHEMISM",Alchemism}, {"COOKING",Cooking},
@@ -16,7 +16,7 @@ namespace CraftOpt {
         return profs.at(profession);
     }
 
-    static IDType id_from_string(const std::string& id) {
+    static auto id_from_string(const std::string& id) {
         static std::unordered_map<std::string, IDType> const idTable = {
                 {"str", SP_Strength}, {"dex", SP_Dexterity}, {"int", SP_Intelligence}, {"def", SP_Defence}, {"agi", SP_Agility},
                 {"poison", Poison}, {"spd", Walk_Speed}, {"sprint", Sprint}, {"sprintReg", Sprint_Regen}, {"jh", Jump_Height},
@@ -38,19 +38,20 @@ namespace CraftOpt {
         return idTable.at(id);
     }
 
-    Ingredient ingredient_from_json(const json& data) {
+    auto ingredient_from_json(const json& data) {
         Ingredient result;
         result.name = data["name"];
+        result.id = data["id"];
         result.tier = data["tier"];
         result.level = data["lvl"];
 
         result.skills = 0;
         for (const auto& prof : data["skills"]) {
-            result.skills |= static_cast<value_t>(profession_from_string(prof));
+            result.skills = static_cast<value_t>(result.skills | profession_from_string(prof));
         }
 
         for (const auto& id : data["ids"].items()) {
-            result.ids[id_from_string(id.key())] = std::make_pair(id.value()["minimum"], id.value()["maximum"]);
+            result.ids.at(id_from_string(id.key())) = std::make_pair(id.value()["minimum"], id.value()["maximum"]);
         }
 
         const auto& itemIDs = data["itemIDs"];
@@ -75,11 +76,35 @@ namespace CraftOpt {
         return result;
     }
 
-    std::vector<Ingredient> ingredients_from_json(const json& data) {
-        std::vector<CraftOpt::Ingredient> ingredients;
+    auto ingredients_from_json(const json& data) -> std::vector<Ingredient> {
+        std::vector<Ingredient> ingredients;
         for (const auto& ingredient_data : data) {
             ingredients.emplace_back(CraftOpt::ingredient_from_json(ingredient_data));
         }
         return ingredients;
+    }
+
+    value_t applyEffectiveness(value_t value, value_t effectiveness) {
+        const auto res = static_cast<float>((value * effectiveness)) / 100.0f;
+        return static_cast<value_t>(res);
+    }
+
+    void CraftStats::add_ingredient(size_t slot, const Ingredient& ing, value_t eff) {
+        ingredients.at(slot) = ing.id;
+
+        for (auto i = 0; i < ID_Types_Count; ++i) {
+            value_t min = applyEffectiveness(ing.ids[i].first, eff);
+            value_t max = applyEffectiveness(ing.ids[i].second, eff);
+            if (max < min) std::swap(min, max);
+            ids[i].first += min;
+            ids[i].second += max;
+        }
+
+        durability += ing.durability;
+        charges += ing.charges;
+        length += ing.length;
+        for (auto i = 0; i < Skill_Type_Count; ++i) {
+            skill_requirements.at(i) += applyEffectiveness(ing.skill_requirements.at(i), eff);
+        }
     }
 }
